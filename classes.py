@@ -76,12 +76,12 @@ class SystemStats:
         self.refresh()
 
     def refresh(self):
-        alpha = 0.10
-        niter = 5
+        alpha = 0.4
+        niter = 2
 
         for _ in xrange(niter):
             self.cpu = emalist(
-                    psutil.cpu_percent(percpu=True), self.cpu, alpha)
+                    psutil.cpu_percent(interval=0.1, percpu=True), self.cpu, alpha)
 
         self.mem = psutil.virtual_memory()
         self.proc = {
@@ -113,7 +113,7 @@ class InfoBox:
 class CpuInfoBox(InfoBox):
     def __init__(self, y, x, width, scr, stats):
         InfoBox.__init__(self, y, x, [1, stats.nproc, 6], width, scr, "CPU")
-        self.barwidth = width - 7
+        self.barwidth = 50
         self.stats = stats
         self.prev_proc = {}
 
@@ -172,7 +172,7 @@ class CpuInfoBox(InfoBox):
 class MemInfoBox(InfoBox):
     def __init__(self, y, x, width, scr, stats):
         InfoBox.__init__(self, y, x, [1, 1, 6], width, scr, "MEM")
-        self.barwidth = width - 7
+        self.barwidth = 50
         self.stats = stats
         self._prev_usage = -1
         self.prev_proc = {}
@@ -233,13 +233,22 @@ class MemInfoBox(InfoBox):
             "%(memory_percent)5.1f " +
             " %(name)s")
 
+        row_fmt = (
+                "%(pid)7d " +
+                "%(username)" + str(user_len) + "s " +
+                "%(cpu_percent)5.1f " +
+                "%(memory_percent)5.1f " +
+                " %(name)s")
+
         win = self.win[2]
         win.erase()
 
         win.addstr(0, 1, hdr_fmt % ("pid", "user", "cpu", "mem", "name"))
 
         for ip, p in enumerate(top):
+            p['username'] = p['username'][:user_len]
             win.addstr(ip+1, 1, row_fmt % p)
+            #win.addstr(ip+1, 1, 'hi')
 
         win.refresh()
 
@@ -249,7 +258,7 @@ if __name__ == "__main__":
     manager = CursesManager()
     stats = SystemStats()
 
-    width = 50
+    width = 200
     y0 = x0 = 1
 
     cpu = CpuInfoBox(y0, x0, width, manager.scr, stats)
